@@ -1,9 +1,11 @@
-import 'dart:convert';
-
+import '../services/geocoding_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+
+import '../services/location_service.dart';
+import '../widgets/booking_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,63 +15,34 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final MapController _mapController = MapController();
+  final MapController mapController = MapController();
+  final TextEditingController pickupController = TextEditingController();
+  final TextEditingController destinationController = TextEditingController();
 
-  final TextEditingController pickupController =
-      TextEditingController();
+  Position? currentPosition;
 
-  final TextEditingController destinationController =
-      TextEditingController();
+  Future<void> getCurrentLocation() async {
+    final position = await LocationService.getCurrentLocation();
 
-  List<dynamic> pickupSuggestions = [];
-  List<dynamic> destinationSuggestions = [];
+    if (position == null) return;
 
-  Future<void> searchPlace(
-      String query,
-      bool isPickup,
-      ) async {
-    if (query.isEmpty) {
-      setState(() {
-        if (isPickup) {
-          pickupSuggestions = [];
-        } else {
-          destinationSuggestions = [];
-        }
-      });
-      return;
-    }
+    setState(() {
+      currentPosition = position;
+    });
+final address = await GeocodingService.getAddress(
+  position.latitude,
+  position.longitude,
+);
 
-    final url = Uri.parse(
-      "https://nominatim.openstreetmap.org/search?q=$query&format=jsonv2&limit=5",
-    );
-
-    final response = await http.get(
-      url,
-      headers: {
-        "User-Agent": "AnsarTaxi",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      setState(() {
-        if (isPickup) {
-          pickupSuggestions = data;
-        } else {
-          destinationSuggestions = data;
-        }
-      });
-    }
-  }
-
-  void moveToPlace(dynamic place) {
-    final lat = double.parse(place["lat"]);
-    final lon = double.parse(place["lon"]);
-
-    _mapController.move(
-      LatLng(lat, lon),
-      15,
+if (address != null) {
+  pickupController.text = address;
+}
+    mapController.move(
+      LatLng(
+        position.latitude,
+        position.longitude,
+      ),
+      16,
     );
   }
 
@@ -77,27 +50,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        centerTitle: true,
-        title: const Text(
-          "AnsarTaxi",
-          style: TextStyle(
-            color: Colors.yellow,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-
-      body: Column(
-        children: [
-
-          SizedBox(
-            height: 300,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: mapController,
+              options: const MapOptions(
                 initialCenter: LatLng(
                   15.4909,
                   73.8278,
@@ -107,150 +65,58 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 TileLayer(
                   urlTemplate:
-                  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                   userAgentPackageName:
-                  "com.example.ansartaxi",
+                      "com.example.ansartaxi",
                 ),
               ],
             ),
-          ),
 
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                children: [
-
-                  TextField(
-                    controller: pickupController,
-                    onChanged: (value) {
-                      searchPlace(value, true);
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Pickup Location",
-                      filled: true,
-                      fillColor: Colors.white,
-                      prefixIcon:
-                      const Icon(Icons.my_location),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),const SizedBox(height: 10),
-
-                  if (pickupSuggestions.isNotEmpty)
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: pickupSuggestions.length,
-                        itemBuilder: (context, index) {
-                          final place = pickupSuggestions[index];
-
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.location_on),
-                              title: Text(place["display_name"]),
-                              onTap: () {
-                                pickupController.text =
-                                    place["display_name"];
-
-                                pickupSuggestions = [];
-
-                                moveToPlace(place);
-
-                                setState(() {});
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                  const SizedBox(height: 10),
-
-                  TextField(
-                    controller: destinationController,
-                    onChanged: (value) {
-                      searchPlace(value, false);
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Destination",
-                      filled: true,
-                      fillColor: Colors.white,
-                      prefixIcon:
-                          const Icon(Icons.location_on),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  if (destinationSuggestions.isNotEmpty)
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount:
-                            destinationSuggestions.length,
-                        itemBuilder: (context, index) {
-                          final place =
-                              destinationSuggestions[index];
-
-                          return Card(
-                            child: ListTile(
-                              leading: const Icon(
-                                  Icons.location_on),
-                              title: Text(
-                                  place["display_name"]),
-                              onTap: () {
-                                destinationController.text =
-                                    place["display_name"];
-
-                                destinationSuggestions = [];
-
-                                moveToPlace(place);
-
-                                setState(() {});
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-const Spacer(),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.yellow,
-                        foregroundColor: Colors.black,
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Booking feature coming soon...",
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Book Taxi",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            Positioned(
+              top: 20,
+              left: 20,
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white,
+                child: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.menu),
+                ),
               ),
             ),
-          ),
-        ],
+
+            Positioned(
+              top: 20,
+              right: 20,
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white,
+                child: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person),
+                ),
+              ),
+            ),
+Positioned(
+              right: 20,
+              bottom: 260,
+              child: FloatingActionButton(
+                backgroundColor: Colors.yellow,
+                foregroundColor: Colors.black,
+                onPressed: getCurrentLocation,
+                child: const Icon(Icons.my_location),
+              ),
+            ),
+
+            Align(
+              alignment: Alignment.bottomCenter, 
+              child: BookingPanel(
+  pickupController: pickupController,
+  destinationController: destinationController,
+),
+            ),
+          ],
+        ),
       ),
     );
   }
