@@ -1,3 +1,4 @@
+import 'home_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -48,7 +49,14 @@ class LoginScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const HomeScreen(),
+    ),
+  );
+},
               child: const Text("Continue"),
             ),
           ],
