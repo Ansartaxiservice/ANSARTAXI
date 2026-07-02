@@ -4,44 +4,75 @@ import 'package:latlong2/latlong.dart';
 
 class MapWidget extends StatelessWidget {
   final MapController mapController;
-  final VoidCallback onLocationPressed;
+  final LatLng initialCenter;
+  final LatLng? pickup;
+  final LatLng? destination;
+  final List<LatLng> routePoints;
 
   const MapWidget({
     super.key,
     required this.mapController,
-    required this.onLocationPressed,
+    required this.initialCenter,
+    this.pickup,
+    this.destination,
+    this.routePoints = const [],
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: initialCenter,
+        initialZoom: 12,
+      ),
       children: [
-        FlutterMap(
-          mapController: mapController,
-          options: const MapOptions(
-            initialCenter: LatLng(15.4909, 73.8278),
-            initialZoom: 12,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate:
-                  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-              userAgentPackageName: "com.example.ansartaxi",
-            ),
-          ],
+        TileLayer(
+          urlTemplate:
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          userAgentPackageName: "com.example.ansartaxi",
         ),
 
-        Positioned(
-          right: 20,
-          bottom: 20,
-          child: FloatingActionButton(
-            backgroundColor: Colors.yellow,
-            foregroundColor: Colors.black,
-            onPressed: onLocationPressed,
-            child: const Icon(Icons.my_location),
+        if (routePoints.isNotEmpty)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: routePoints,
+                strokeWidth: 5,
+                color: Colors.blue,
+              ),
+            ],
           ),
+
+        MarkerLayer(
+          markers: [
+            if (pickup != null)
+              Marker(
+                point: pickup!,
+                width: 45,
+                height: 45,
+                child: const Icon(
+                  Icons.location_on,
+                  color: Colors.green,
+                  size: 40,
+                ),
+              ),
+
+            if (destination != null)
+              Marker(
+                point: destination!,
+                width: 45,
+                height: 45,
+                child: const Icon(
+                  Icons.location_on,
+                  color: Colors.red,
+                  size: 40,
+                ),
+              ),
+          ],
         ),
       ],
     );
   }
-}
+}	
+
