@@ -1,6 +1,7 @@
 import '../services/distance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import '../widgets/taxi_selection_sheet.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -187,7 +188,14 @@ Positioned(
                 distance: distance,
                 time: time,
                 fare: fare,
-                onBook: () {},
+                onBook: () {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => const TaxiSelectionSheet(),
+  );
+},
               ),
             ),
           ],
