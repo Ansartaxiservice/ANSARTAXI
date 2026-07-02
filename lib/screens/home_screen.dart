@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 Positioned(
               right: 20,
-              bottom: 260,
+              bottom: 420,
               child: FloatingActionButton(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,
