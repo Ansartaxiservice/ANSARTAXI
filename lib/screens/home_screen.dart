@@ -1,10 +1,13 @@
-import '../services/geocoding_service.dart';
+import '../services/distance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../models/place_model.dart';
+import '../services/geocoding_service.dart';
 import '../services/location_service.dart';
+import '../services/search_service.dart';
 import '../widgets/booking_panel.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,27 +19,41 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MapController mapController = MapController();
-  final TextEditingController pickupController = TextEditingController();
-  final TextEditingController destinationController = TextEditingController();
+
+  final TextEditingController pickupController =
+      TextEditingController();
+
+  final TextEditingController destinationController =
+      TextEditingController();
 
   Position? currentPosition;
 
+  List<PlaceModel> searchResults = [];
+
+  String distance = "0.0 km";
+  String time = "0 min";
+  String fare = "₹100";
+
   Future<void> getCurrentLocation() async {
-    final position = await LocationService.getCurrentLocation();
+    final position =
+        await LocationService.getCurrentLocation();
 
     if (position == null) return;
 
     setState(() {
       currentPosition = position;
     });
-final address = await GeocodingService.getAddress(
-  position.latitude,
-  position.longitude,
-);
 
-if (address != null) {
-  pickupController.text = address;
-}
+    final address =
+        await GeocodingService.getAddress(
+      position.latitude,
+      position.longitude,
+    );
+
+    if (address != null) {
+      pickupController.text = address;
+    }
+
     mapController.move(
       LatLng(
         position.latitude,
@@ -45,6 +62,57 @@ if (address != null) {
       16,
     );
   }
+
+  Future<void> searchDestination(
+      String value) async {
+    final results =
+        await SearchService.search(value);
+
+    setState(() {
+      searchResults = results;
+    });
+  }
+
+  void selectPlace(PlaceModel place) {
+  destinationController.text = place.name;
+
+  final pickup = currentPosition;
+
+  if (pickup != null) {
+    final pickupLatLng = LatLng(
+      pickup.latitude,
+      pickup.longitude,
+    );
+
+    final destinationLatLng = LatLng(
+      place.latitude,
+      place.longitude,
+    );
+
+    final distanceKm =
+        DistanceService.calculateDistance(
+      pickupLatLng,
+      destinationLatLng,
+    );
+
+    setState(() {
+      searchResults.clear();
+
+      distance =
+          "${distanceKm.toStringAsFixed(1)} km";
+
+      time =
+          "${DistanceService.estimateTime(distanceKm)} min";
+
+      fare =
+          "₹${DistanceService.calculateFare(distanceKm).toStringAsFixed(0)}";
+    });
+  } else {
+    setState(() {
+      searchResults.clear();
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +177,18 @@ Positioned(
             ),
 
             Align(
-              alignment: Alignment.bottomCenter, 
+              alignment: Alignment.bottomCenter,
               child: BookingPanel(
-  pickupController: pickupController,
-  destinationController: destinationController,
-),
+                pickupController: pickupController,
+                destinationController: destinationController,
+                searchResults: searchResults,
+                onDestinationChanged: searchDestination,
+                onPlaceSelected: selectPlace,
+                distance: distance,
+                time: time,
+                fare: fare,
+                onBook: () {},
+              ),
             ),
           ],
         ),
