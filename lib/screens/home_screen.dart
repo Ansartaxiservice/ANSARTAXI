@@ -1,3 +1,6 @@
+
+import '../widgets/map_widget.dart';
+import '../controllers/map_controller.dart';
 import '../services/distance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -20,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MapController mapController = MapController();
-
+  final MapStateController mapState = MapStateController();
   final TextEditingController pickupController =
       TextEditingController();
 
@@ -28,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
       TextEditingController();
 
   Position? currentPosition;
+
+  LatLng? destinationPoint;
 
   List<PlaceModel> searchResults = [];
 
@@ -85,10 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
       pickup.longitude,
     );
 
-    final destinationLatLng = LatLng(
-      place.latitude,
-      place.longitude,
-    );
+    destinationPoint = LatLng(
+  place.latitude,
+  place.longitude,
+);
+
+final destinationLatLng = destinationPoint!;
 
     final distanceKm =
         DistanceService.calculateDistance(
@@ -122,24 +129,20 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            FlutterMap(
-              mapController: mapController,
-              options: const MapOptions(
-                initialCenter: LatLng(
-                  15.4909,
-                  73.8278,
-                ),
-                initialZoom: 12,
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                  userAgentPackageName:
-                      "com.example.ansartaxi",
-                ),
-              ],
-            ),
+            MapWidget(
+  mapController: mapController,
+  initialCenter: const LatLng(
+    15.4909,
+    73.8278,
+  ),
+  pickup: currentPosition == null
+      ? null
+      : LatLng(
+          currentPosition!.latitude,
+          currentPosition!.longitude,
+        ),
+destination: destinationPoint,
+),
 
             Positioned(
               top: 20,
