@@ -1,4 +1,5 @@
 
+
 import '../widgets/map_widget.dart';
 import '../controllers/map_controller.dart';
 import '../services/distance_service.dart';
@@ -46,9 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (position == null) return;
 
-    setState(() {
-      currentPosition = position;
-    });
+      
+      setState(() {
+  currentPosition = position;
+});
 
     final address =
         await GeocodingService.getAddress(
@@ -82,45 +84,41 @@ class _HomeScreenState extends State<HomeScreen> {
   void selectPlace(PlaceModel place) {
   destinationController.text = place.name;
 
-  final pickup = currentPosition;
-
-  if (pickup != null) {
-    final pickupLatLng = LatLng(
-      pickup.latitude,
-      pickup.longitude,
-    );
-
-    destinationPoint = LatLng(
-  place.latitude,
-  place.longitude,
-);
-
-final destinationLatLng = destinationPoint!;
-
-    final distanceKm =
-        DistanceService.calculateDistance(
-      pickupLatLng,
-      destinationLatLng,
-    );
-
-    setState(() {
-      searchResults.clear();
-
-      distance =
-          "${distanceKm.toStringAsFixed(1)} km";
-
-      time =
-          "${DistanceService.estimateTime(distanceKm)} min";
-
-      fare =
-          "₹${DistanceService.calculateFare(distanceKm).toStringAsFixed(0)}";
-    });
-  } else {
+  if (currentPosition == null) {
     setState(() {
       searchResults.clear();
     });
+    return;
   }
+
+  final pickupLatLng = LatLng(
+    currentPosition!.latitude,
+    currentPosition!.longitude,
+  );
+
+  final destinationLatLng = LatLng(
+    place.latitude,
+    place.longitude,
+  );
+
+  final distanceKm = DistanceService.calculateDistance(
+    pickupLatLng,
+    destinationLatLng,
+  );
+
+  setState(() {
+    destinationPoint = destinationLatLng;
+    searchResults.clear();
+
+    distance = "${distanceKm.toStringAsFixed(1)} km";
+    time = "${DistanceService.estimateTime(distanceKm)} min";
+    fare =
+        "₹${DistanceService.calculateFare(distanceKm).toStringAsFixed(0)}";
+  });
+
+  mapController.move(destinationLatLng, 14);
 }
+     
 
   @override
   Widget build(BuildContext context) {
