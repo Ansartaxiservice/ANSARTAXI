@@ -101,28 +101,28 @@ List<LatLng> routePoints = [];
     place.longitude,
   );
 
-  final distanceKm = DistanceService.calculateDistance(
-    pickupLatLng,
-    destinationLatLng,
-  );
-routePoints = await RouteService.getRoute(
+  
+final routeResult = await RouteService.getRoute(
   pickupLatLng,
   destinationLatLng,
 );
   setState(() {
-    destinationPoint = destinationLatLng;
-    routePoints = List.from(routePoints);
-    searchResults.clear();
+  destinationPoint = destinationLatLng;
+  routePoints = routeResult.points;
 
-    distance = "${distanceKm.toStringAsFixed(1)} km";
-    time = "${DistanceService.estimateTime(distanceKm)} min";
-    fare =
-        "₹${DistanceService.calculateFare(distanceKm).toStringAsFixed(0)}";
-  });
+  searchResults.clear();
 
-  mapController.move(destinationLatLng, 14);
-}
-     
+  distance =
+      "${routeResult.distanceKm.toStringAsFixed(1)} km";
+
+  time = "${routeResult.durationMin} min";
+
+  fare =
+      "₹${DistanceService.calculateFare(routeResult.distanceKm).toStringAsFixed(0)}";
+});
+
+mapController.move(destinationLatLng, 14);
+}     
 
   @override
   Widget build(BuildContext context) {

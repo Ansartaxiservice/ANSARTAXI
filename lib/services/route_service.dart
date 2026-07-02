@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import '../models/route_result.dart';
+
 class RouteService {
-  static Future<List<LatLng>> getRoute(
+  static Future<RouteResult> getRoute(
     LatLng start,
     LatLng end,
   ) async {
@@ -18,19 +20,39 @@ class RouteService {
     final response = await http.get(url);
 
     if (response.statusCode != 200) {
-      return [];
+      return RouteResult(
+        points: [],
+        distanceKm: 0,
+        durationMin: 0,
+      );
     }
 
     final data = jsonDecode(response.body);
 
-    final coordinates =
-        data["routes"][0]["geometry"]["coordinates"] as List;
+    final route = data["routes"][0];
 
-    return coordinates.map((point) {
+    final coordinates =
+        route["geometry"]["coordinates"] as List;
+
+    final points = coordinates.map((point) {
       return LatLng(
         point[1].toDouble(),
         point[0].toDouble(),
       );
     }).toList();
+
+    final distanceKm =
+        (route["distance"] as num).toDouble() / 1000;
+
+    final durationMin =
+        ((route["duration"] as num).toDouble() / 60)
+            .round();
+
+    return RouteResult(
+      points: points,
+      distanceKm: distanceKm,
+      durationMin: durationMin,
+    );
   }
-}
+}	
+
