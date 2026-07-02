@@ -1,6 +1,5 @@
-
-
-import '../widgets/map_widget.dart';
+import '../services/route_service.dart';
+import '../widgets/home_map.dart';
 import '../controllers/map_controller.dart';
 import '../services/distance_service.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Position? currentPosition;
 
   LatLng? destinationPoint;
+List<LatLng> routePoints = [];
 
   List<PlaceModel> searchResults = [];
 
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void selectPlace(PlaceModel place) {
+  Future<void> selectPlace(PlaceModel place) async {
   destinationController.text = place.name;
 
   if (currentPosition == null) {
@@ -105,9 +105,13 @@ class _HomeScreenState extends State<HomeScreen> {
     pickupLatLng,
     destinationLatLng,
   );
-
+routePoints = await RouteService.getRoute(
+  pickupLatLng,
+  destinationLatLng,
+);
   setState(() {
     destinationPoint = destinationLatLng;
+    routePoints = List.from(routePoints);
     searchResults.clear();
 
     distance = "${distanceKm.toStringAsFixed(1)} km";
@@ -127,19 +131,22 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            MapWidget(
+            HomeMap(
   mapController: mapController,
-  initialCenter: const LatLng(
-    15.4909,
-    73.8278,
-  ),
+  center: currentPosition == null
+      ? const LatLng(15.4909, 73.8278)
+      : LatLng(
+          currentPosition!.latitude,
+          currentPosition!.longitude,
+        ),
   pickup: currentPosition == null
       ? null
       : LatLng(
           currentPosition!.latitude,
           currentPosition!.longitude,
         ),
-destination: destinationPoint,
+  destination: destinationPoint,
+  routePoints: routePoints,
 ),
 
             Positioned(
