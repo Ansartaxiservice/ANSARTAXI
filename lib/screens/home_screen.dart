@@ -1,3 +1,4 @@
+import 'booking_confirmation_screen.dart';
 import '../services/route_service.dart';
 import '../widgets/home_map.dart';
 import '../controllers/map_controller.dart';
@@ -40,6 +41,7 @@ List<LatLng> routePoints = [];
   String distance = "0.0 km";
   String time = "0 min";
   String fare = "₹100";
+double baseFare = 100;
 String selectedTaxi = "Mini";
 double fareMultiplier = 1.0;
   Future<void> getCurrentLocation() async {
@@ -117,7 +119,7 @@ final routeResult = await RouteService.getRoute(
       "${routeResult.distanceKm.toStringAsFixed(1)} km";
 
   time = "${routeResult.durationMin} min";
-
+baseFare = DistanceService.calculateFare(routeResult.distanceKm);
   fare =
       "₹${DistanceService.calculateFare(routeResult.distanceKm).toStringAsFixed(0)}";
 });
@@ -197,7 +199,9 @@ Positioned(
                 distance: distance,
                 time: time,
                 fare: fare,
-                onBook: () async {
+                
+
+  onBook: () async {
   final selectedTaxi = await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -206,36 +210,43 @@ Positioned(
   );
 
   if (selectedTaxi == null) return;
-setState(() {
-  this.selectedTaxi = selectedTaxi["name"];
 
-  switch (this.selectedTaxi) {
-    case "Mini":
-      fareMultiplier = 1.0;
-      break;
+  setState(() {
+if (!mounted) return;
 
-    case "Sedan":
-      fareMultiplier = 1.3;
-      break;
+await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) =>
+        const BookingConfirmationScreen(),
+  ),
+);
+    this.selectedTaxi = selectedTaxi["name"];
 
-    case "SUV":
-      fareMultiplier = 1.7;
-      break;
+    switch (this.selectedTaxi) {
+      case "Mini":
+        fareMultiplier = 1.0;
+        break;
 
-    case "XL":
-      fareMultiplier = 2.2;
-      break;
-  }
+      case "Sedan":
+        fareMultiplier = 1.3;
+        break;
 
-  final currentFare = double.parse(
-    fare.replaceAll("₹", ""),
-  );
+      case "SUV":
+        fareMultiplier = 1.7;
+        break;
 
-  fare =
-      "₹${(currentFare * fareMultiplier).toStringAsFixed(0)}";
-});
+      case "XL":
+        fareMultiplier = 2.2;
+        break;
+    }
 
+    fare =
+        "₹${(baseFare * fareMultiplier).toStringAsFixed(0)}";
+  });
 },
+
+   
               ),
             ),
           ],
