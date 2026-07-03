@@ -40,7 +40,8 @@ List<LatLng> routePoints = [];
   String distance = "0.0 km";
   String time = "0 min";
   String fare = "₹100";
-
+String selectedTaxi = "Mini";
+double fareMultiplier = 1.0;
   Future<void> getCurrentLocation() async {
     final position =
         await LocationService.getCurrentLocation();
@@ -196,13 +197,44 @@ Positioned(
                 distance: distance,
                 time: time,
                 fare: fare,
-                onBook: () {
-  showModalBottomSheet(
+                onBook: () async {
+  final selectedTaxi = await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => const TaxiSelectionSheet(),
   );
+
+  if (selectedTaxi == null) return;
+setState(() {
+  this.selectedTaxi = selectedTaxi["name"];
+
+  switch (this.selectedTaxi) {
+    case "Mini":
+      fareMultiplier = 1.0;
+      break;
+
+    case "Sedan":
+      fareMultiplier = 1.3;
+      break;
+
+    case "SUV":
+      fareMultiplier = 1.7;
+      break;
+
+    case "XL":
+      fareMultiplier = 2.2;
+      break;
+  }
+
+  final currentFare = double.parse(
+    fare.replaceAll("₹", ""),
+  );
+
+  fare =
+      "₹${(currentFare * fareMultiplier).toStringAsFixed(0)}";
+});
+
 },
               ),
             ),
